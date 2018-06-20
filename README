@@ -1,0 +1,149 @@
+
+XSLT CGI Processor
+==================
+
+1. Introduction
+2. Building
+3. Installation
+4. Using
+5. Contact
+
+--------------------------------------------------------------------------
+
+1. Introduction
+
+This code enables a web server (Apache and probably others) to process 
+XML files through an XSLT processor, and passing the output of the 
+transformation to a user's browser.
+
+Eventually I'll get round to writing more documentation, however for now
+I will assume that as an end-user you are aware of what XSLT is and
+how it can be used. All you want is a simple way to automatically process
+XML on your web server :-)
+
+---------------------------------------------------------------------------
+
+2. Building
+
+Pre-requisites. You will need:
+	Sablotron - this is an XSLT library and is available at:
+		http://www.gingerall.com/charlie/ga/xml/p_sab.xml
+
+	Expat - an XML parsing liberary. Sablotron requires this to build.
+		http://www.jclark.com/xml/expat.html
+
+
+Once these are installed, builidng the software should be a simple case of
+typing:
+
+	make
+
+And thats it. It's only a single C file. I've only tested the build on a
+Linux box, however it doesn't do anything fancy so should build happily
+on other platforms. Let me know of any problems.
+
+This will leave you with a single binary: "xslt", ready for installation.
+
+--------------------------------------------------------------------------
+
+3. Installation
+
+I am going to assume that you are using Apache as your webserver - if you
+run something else then you will have to consult your server's
+documentation.
+
+The xslt binary needs to be installed in your web-servers cgi-bin 
+directory. This varies from distribution to distribution. In Slackware 10,
+the default location is /var/www/cgi-bin.
+
+If you know where the Apache configuration files are, then it should be
+a simple case to look up the "ScriptAlias" definition in httpd.conf.
+
+Once you know where the CGI directory is:
+
+	cp xslt /path/to/my/cgi-bin/directory
+	chmod 755 /path/to/my/cgi-bin/directory/xslt
+
+Now Apache needs to be told how to use the handler.
+
+In httpd.conf, I have added these two lines to my configuration:
+
+	AddHandler xml-with-xslt .xwx
+	Action xml-with-xslt /cgi-bin/xslt
+
+The first line adds a handler for files with an extension of "xww" 
+called "xml-with-xslt". The second line defines what the action should
+do (pass the file to /cgi-bin/xslt).
+
+You can use any extention you like -- I chose xwx so it wouldn't clash
+with anything else I'm likely to serve up. You can, if you wish, have all
+XML files (i.e., those with a xml extension) be passed to the XSLT parser.
+I've not done this myself so I can serve XML files as pure XML if I so
+wish.
+
+Once the configuration changes have been made, restart Apache:
+
+	apachectl restart
+
+or:
+
+	kill -HUP <path to apache>
+
+And the XSLT handler should now be in place.
+
+--------------------------------------------------------------------------
+
+4. Using
+
+Using the handler is straightforward. If you have an XML file you want to
+pass through a stylesheet, give the file the appropriate extension (for
+example, xwx), and create an XSLT stylesheet of the samename, but with the
+added extention of .xslt. For example:
+
+	myxml.xwx will have a default stylesheet of: myxml.xwx.xslt
+
+Using an alternative stylesheet is a simple matter of specifying the name
+of the stylesheet in the querystring, using the parameter 'X'.
+
+	http://myserver.com/content/somewhere/myxml.xwx?X=alternative
+
+will process the file myxml.xwx using the stylesheet alternative.xslt.
+
+If no stylesheet is specified with the X parameter, and the handler cannot
+find one named after the requested document, then the handler will fall
+back to looking for a default stylesheet, named _DEFAULT.xslt. 
+
+You can also pass parameters to the stylesheet. Any other parameter that
+is not 'X' on the querystring will be passed as parameters for the XSLT
+stylesheet. Thus:
+
+	http://myserver.com/content/somewhere/myxml.xwx?P1=cat
+
+will pass the parameter P1 through to the stylesheet. The parameter will
+need to be declared in the top of the stylesheet using the <xsl:param>
+directive:
+
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+	<xsl:output method="html"/>
+	<xsl:param name="P1" />
+		.
+		.
+		.
+</xsl:stylesheet>
+
+It may then be accessed in the normal way for variables and parameters (that
+is: $P1 ... for example: <xsl:value-of select="$P1" />
+
+Up to 16 parameters may be given, as well as the name of a stylesheet on
+the querystring, thus should give plenty of flexibility (I'd hope :-) ).
+
+And that's all there is to it.
+
+--------------------------------------------------------------------------
+
+5. Contact
+
+Any problems, bug reports, etc, then please email me at:
+	cej-xslt@nightwolf.org.uk
+
+Cheers!
